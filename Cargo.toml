@@ -2,9 +2,14 @@
 name = "mymacro"
 version = "0.1.0"
 edition = "2024"
+autotests = false
 
 [lib]
 proc-macro = true
+
+[[test]]
+name = "tests"
+path = "tests/progress.rs"
 
 [dependencies]
 proc-macro2 = "1.0.93"
