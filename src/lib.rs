@@ -18,12 +18,15 @@ mod original;
 use original::original_token_stream;
 mod secion;
 use secion::repeat_section;
+mod array;
+use array::init_array;
 
 #[derive(Debug)]
 enum Item {
     Paste(PasteIdent),
     Comp(Compile),
     RepeatSection(RepeatSection),
+    InitArray(RepeatedElement),
     Any(Original),
 }
 
@@ -36,6 +39,8 @@ impl Parse for Item {
             input.parse().map(Item::Paste)
         } else if input.peek(Token![#]) && input.peek3(Token![enum]) {
             input.parse().map(Item::RepeatSection)
+        } else if input.peek(token::Bracket) {
+            input.parse().map(Item::InitArray)
         } else {
             input.parse().map(Item::Any)
         }
@@ -56,6 +61,10 @@ struct RepeatSection {
 }
 
 #[derive(Debug)]
+struct RepeatedElement {
+    inner: proc_macro2::TokenStream,
+}
+#[derive(Debug)]
 struct PasteIdent {
     fn_symbol: Token![fn],
     f_name: Ident,
@@ -70,18 +79,6 @@ struct PasteIdent {
 }
 
 #[derive(Debug)]
-// struct Compile {
-//     compile_error_name: Ident,     //compile_error
-//     exclamation_mark: Punct,       // !
-//     inner_ident: Ident,            //concat
-//     inner_exclamation_mark: Punct, // !
-//     inner_literal: Literal,        //error number
-//     inner_comma: Punct,            //,
-//     inner_inner_ident: Ident,      // stringify
-//     inner_inner_exclamation_mark: Punct,
-//     n_ident: Ident,        //N
-//     last_semicolon: Punct, //;
-// }
 
 struct Compile {
     inner: proc_macro2::TokenStream,
@@ -103,6 +100,13 @@ impl Parse for RepeatSection {
     fn parse(input: ParseStream) -> Result<Self> {
         let inner: proc_macro2::TokenStream = input.parse()?;
         Ok(RepeatSection { inner })
+    }
+}
+
+impl Parse for RepeatedElement {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let inner: proc_macro2::TokenStream = input.parse()?;
+        Ok(RepeatedElement { inner })
     }
 }
 // compile_error!(concat!("error number ", stringify!(N)));
@@ -180,9 +184,10 @@ pub fn seq(input: TokenStream) -> TokenStream {
     let output = match parse_macro_input!(inner as Item) {
         Item::Paste(paste_ident) => paste_ident_token_stream(paste_ident, name, from_int, to_int),
         Item::Comp(compile) => compile_token_stream(compile, name, from_int, to_int),
-        Item::RepeatSection(repeatedsection) => {
-            repeat_section(repeatedsection, from_int, to_int).into()
+        Item::RepeatSection(repeated_section) => {
+            repeat_section(repeated_section, from_int, to_int).into()
         }
+        Item::InitArray(repeated_element) => init_array(repeated_element, from_int, to_int).into(),
         Item::Any(original) => original_token_stream(original),
     };
 
