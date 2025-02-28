@@ -16,11 +16,14 @@ mod compile_error;
 use compile_error::compile_token_stream;
 mod original;
 use original::original_token_stream;
+mod secion;
+use secion::repeat_section;
 
 #[derive(Debug)]
 enum Item {
     Paste(PasteIdent),
     Comp(Compile),
+    RepeatSection(RepeatSection),
     Any(Original),
 }
 
@@ -31,6 +34,8 @@ impl Parse for Item {
             input.parse().map(Item::Comp)
         } else if input.peek(Token![fn]) {
             input.parse().map(Item::Paste)
+        } else if input.peek(Token![#]) && input.peek3(Token![enum]) {
+            input.parse().map(Item::RepeatSection)
         } else {
             input.parse().map(Item::Any)
         }
@@ -42,6 +47,11 @@ struct SeqStruct {
     name: Ident,
     from: syn::LitInt,
     to: syn::LitInt,
+    inner: proc_macro2::TokenStream,
+}
+
+#[derive(Debug)]
+struct RepeatSection {
     inner: proc_macro2::TokenStream,
 }
 
@@ -88,6 +98,13 @@ impl Parse for Original {
         Ok(Original { inner })
     }
 }
+
+impl Parse for RepeatSection {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let inner: proc_macro2::TokenStream = input.parse()?;
+        Ok(RepeatSection { inner })
+    }
+}
 // compile_error!(concat!("error number ", stringify!(N)));
 impl Parse for Compile {
     fn parse(input: ParseStream) -> Result<Self> {
@@ -105,8 +122,6 @@ impl Parse for SeqStruct {
         let to: syn::LitInt = input.parse()?;
         let content;
         let _brace_token = syn::braced!(content in input);
-        // let inner: proc_macro2::TokenStream = content.parse()?;
-
         let inner: proc_macro2::TokenStream = content.parse()?;
         Ok(SeqStruct {
             name,
@@ -159,12 +174,15 @@ pub fn seq(input: TokenStream) -> TokenStream {
 
     // eprintln!("input.inner is {:#?}", input.inner);
     //
-    // pase PasteIdent
+    // PasteIdent
     let inner: proc_macro::TokenStream = input.inner.into();
     println!("inner is {:#?}", inner);
     let output = match parse_macro_input!(inner as Item) {
         Item::Paste(paste_ident) => paste_ident_token_stream(paste_ident, name, from_int, to_int),
         Item::Comp(compile) => compile_token_stream(compile, name, from_int, to_int),
+        Item::RepeatSection(repeatedsection) => {
+            repeat_section(repeatedsection, from_int, to_int).into()
+        }
         Item::Any(original) => original_token_stream(original),
     };
 
