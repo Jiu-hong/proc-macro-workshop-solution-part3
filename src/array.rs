@@ -56,7 +56,6 @@ pub fn init_array(
     from_int: u64,
     to_int: u64,
 ) -> proc_macro::TokenStream {
-    println!("here at init_array");
     let input = repeated_element.inner.into();
     let output = parse_macro_input!(input as Element);
     let proc_name = output.proc_name;

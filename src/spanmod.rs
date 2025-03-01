@@ -58,7 +58,7 @@ pub fn ident_span(
     to_int: u64,
 ) -> proc_macro::TokenStream {
     let input = missing_ident.inner.into();
-    // eprintln!("a is {:#?}", a);
+
     let output = parse_macro_input!(input as Element);
 
     let elements = (from_int..to_int).map(|index| {
