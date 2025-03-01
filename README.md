@@ -1,0 +1,1 @@
+my seq solution for [proc-macro-workshop-solution](https://github.com/dtolnay/proc-macro-workshop/tree/master/seq)
