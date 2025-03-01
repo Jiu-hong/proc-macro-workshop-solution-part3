@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use crate::Compile;
+use proc_macro2::{Group, Ident};
 
-use proc_macro2::{Delimiter, Group, Ident, Span};
-use quote::{ToTokens, quote};
+use quote::quote;
 
 pub fn compile_token_stream(
     compile: Compile,

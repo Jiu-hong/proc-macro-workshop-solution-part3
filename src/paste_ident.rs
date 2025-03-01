@@ -1,6 +1,7 @@
 use crate::PasteIdent;
 use proc_macro2::{Delimiter, Group, Ident};
 use quote::{ToTokens, quote};
+
 pub fn paste_ident_token_stream(
     paste_ident: PasteIdent,
     name: Ident,

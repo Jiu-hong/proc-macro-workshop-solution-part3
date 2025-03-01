@@ -1,15 +1,10 @@
 #![feature(proc_macro_diagnostic)]
 
-use std::str::FromStr;
-
 use proc_macro::TokenStream;
-use proc_macro2::{Delimiter, Group, Literal, Punct, Span, TokenTree};
-use quote::{ToTokens, format_ident, quote, quote_spanned};
+use proc_macro2::{Group, Literal, Punct};
 use syn::parse::{Parse, ParseStream, Result};
-use syn::punctuated::Punctuated;
-use syn::spanned::Spanned;
 use syn::token::{Brace, RArrow};
-use syn::{Expr, Field, Ident, Token, Type, Visibility, parse_macro_input, token};
+use syn::{Ident, Token, parse_macro_input, token};
 mod paste_ident;
 use paste_ident::paste_ident_token_stream;
 mod compile_error;
