@@ -1,5 +1,5 @@
 use crate::RepeatedElement;
-use proc_macro2::{Delimiter, Group, Ident, TokenStream};
+use proc_macro2::{Delimiter, Group, Ident};
 use quote::{ToTokens, quote};
 use syn::{
     Token,
@@ -15,7 +15,6 @@ struct Element {
     path_sep: PathSep,
     new_name: Ident,
     comma: Comma,
-    n_name: Option<Ident>,
 }
 
 impl Parse for Element {
@@ -32,12 +31,7 @@ impl Parse for Element {
         // group
         let content_innermost;
         let _ = syn::parenthesized!(content_innermost in content_inner_inner);
-        let n_name: Option<Ident> = if content_innermost.peek(syn::Ident) {
-            Some(content_innermost.parse()?) //?
-        } else {
-            None
-        };
-
+        let _n_name: Ident = content_innermost.parse()?;
         let comma = content_inner_inner.parse::<Token![,]>()?;
         let _ = content_inner.parse::<Token![*]>()?;
 
@@ -46,7 +40,6 @@ impl Parse for Element {
             path_sep,
             new_name,
             comma,
-            n_name,
         })
     }
 }
@@ -63,14 +56,9 @@ pub fn init_array(
     let path_sep = output.path_sep;
     let new_name = output.new_name;
     let comma = output.comma;
-    let n_name = output.n_name;
 
     let elements = (from_int as usize..to_int as usize).map(|index| {
-        let group = if n_name.is_some() {
-            Group::new(Delimiter::Parenthesis, index.to_token_stream())
-        } else {
-            Group::new(Delimiter::Parenthesis, TokenStream::new())
-        };
+        let group = Group::new(Delimiter::Parenthesis, index.to_token_stream());
         let element = [
             proc_name.to_token_stream(),
             path_sep.to_token_stream(),

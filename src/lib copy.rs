@@ -20,10 +20,6 @@ mod secion;
 use secion::repeat_section;
 mod array;
 use array::init_array;
-mod inclusive;
-use inclusive::inclusive_range;
-mod spanmod;
-use spanmod::ident_span;
 
 #[derive(Debug)]
 enum Item {
@@ -31,8 +27,6 @@ enum Item {
     Comp(Compile),
     RepeatSection(RepeatSection),
     InitArray(RepeatedElement),
-    Inclusive(InclusiveRange),
-    IdentSpan(MissingIdent),
     Any(Original),
 }
 
@@ -41,16 +35,12 @@ impl Parse for Item {
         // let lookahead = input.lookahead1();
         if input.peek2(Token![!]) {
             input.parse().map(Item::Comp)
-        } else if input.peek(Token![fn]) && input.peek3(Token![~]) {
+        } else if input.peek(Token![fn]) {
             input.parse().map(Item::Paste)
         } else if input.peek(Token![#]) && input.peek3(Token![enum]) {
             input.parse().map(Item::RepeatSection)
         } else if input.peek(token::Bracket) {
             input.parse().map(Item::InitArray)
-        } else if input.peek(Token![enum]) {
-            input.parse().map(Item::Inclusive)
-        } else if input.peek(Token![fn]) {
-            input.parse().map(Item::IdentSpan)
         } else {
             input.parse().map(Item::Any)
         }
@@ -63,7 +53,6 @@ struct SeqStruct {
     from: syn::LitInt,
     to: syn::LitInt,
     inner: proc_macro2::TokenStream,
-    inclusive_range_flag: bool,
 }
 
 #[derive(Debug)]
@@ -74,18 +63,6 @@ struct RepeatSection {
 #[derive(Debug)]
 struct RepeatedElement {
     inner: proc_macro2::TokenStream,
-}
-
-#[derive(Debug)]
-struct MissingIdent {
-    inner: proc_macro2::TokenStream,
-}
-
-impl Parse for MissingIdent {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let inner: proc_macro2::TokenStream = input.parse()?;
-        Ok(MissingIdent { inner })
-    }
 }
 #[derive(Debug)]
 struct PasteIdent {
@@ -132,17 +109,6 @@ impl Parse for RepeatedElement {
         Ok(RepeatedElement { inner })
     }
 }
-
-#[derive(Debug)]
-struct InclusiveRange {
-    inner: proc_macro2::TokenStream,
-}
-impl Parse for InclusiveRange {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let inner: proc_macro2::TokenStream = input.parse()?;
-        Ok(InclusiveRange { inner })
-    }
-}
 // compile_error!(concat!("error number ", stringify!(N)));
 impl Parse for Compile {
     fn parse(input: ParseStream) -> Result<Self> {
@@ -157,13 +123,6 @@ impl Parse for SeqStruct {
         input.parse::<Token![in]>()?;
         let from: syn::LitInt = input.parse()?;
         // input.parse::<Token![..]>()?;
-        let inclusive_range_flag = if input.peek(Token![..=]) {
-            input.parse::<Token![..=]>()?;
-            true
-        } else {
-            input.parse::<Token![..]>()?;
-            false
-        };
         let to: syn::LitInt = input.parse()?;
         let content;
         let _brace_token = syn::braced!(content in input);
@@ -173,7 +132,6 @@ impl Parse for SeqStruct {
             from,
             to,
             inner,
-            inclusive_range_flag,
         })
     }
 }
@@ -210,17 +168,19 @@ impl Parse for PasteIdent {
 
 #[proc_macro]
 pub fn seq(input: TokenStream) -> TokenStream {
+    eprintln!("input is {:#?}", input);
     let input = parse_macro_input!(input as SeqStruct);
     let name = input.name;
     let from = input.from;
     let from_int: u64 = from.base10_parse().unwrap();
     let to = input.to;
     let to_int: u64 = to.base10_parse().unwrap();
-    let inclusive_range_flag = input.inclusive_range_flag;
+
+    // eprintln!("input.inner is {:#?}", input.inner);
     //
     // PasteIdent
     let inner: proc_macro::TokenStream = input.inner.into();
-
+    println!("inner is {:#?}", inner);
     let output = match parse_macro_input!(inner as Item) {
         Item::Paste(paste_ident) => paste_ident_token_stream(paste_ident, name, from_int, to_int),
         Item::Comp(compile) => compile_token_stream(compile, name, from_int, to_int),
@@ -228,11 +188,7 @@ pub fn seq(input: TokenStream) -> TokenStream {
             repeat_section(repeated_section, from_int, to_int).into()
         }
         Item::InitArray(repeated_element) => init_array(repeated_element, from_int, to_int).into(),
-        Item::Inclusive(element) => {
-            inclusive_range(element, from_int, to_int, inclusive_range_flag).into()
-        }
         Item::Any(original) => original_token_stream(original),
-        Item::IdentSpan(missing_ident) => ident_span(missing_ident, from_int, to_int).into(),
     };
 
     output.into()

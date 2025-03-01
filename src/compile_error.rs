@@ -11,8 +11,6 @@ pub fn compile_token_stream(
     from_int: u64,
     to_int: u64,
 ) -> proc_macro2::TokenStream {
-    eprintln!("compile is {:#?}", compile);
-
     // output
     let output = (from_int..to_int)
         .map(|x| {

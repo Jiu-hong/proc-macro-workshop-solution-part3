@@ -61,7 +61,6 @@ pub fn repeat_section(
     from_int: u64,
     to_int: u64,
 ) -> proc_macro::TokenStream {
-    eprintln!("inner-> {:#?}", section.inner);
     let input = section.inner.into();
     let output = parse_macro_input!(input as Section);
 

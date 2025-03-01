@@ -7,7 +7,6 @@ pub fn paste_ident_token_stream(
     from_int: u64,
     to_int: u64,
 ) -> proc_macro2::TokenStream {
-    eprintln!("paste_ident is {:#?}", paste_ident);
     let fn_symbol = paste_ident.fn_symbol;
     // f_name: Ident,
     let f_name = paste_ident.f_name;
@@ -59,6 +58,5 @@ pub fn paste_ident_token_stream(
             quote! {#output_each}
         })
         .collect::<proc_macro2::TokenStream>();
-    eprintln!("output is {:#?}", output);
     output
 }
