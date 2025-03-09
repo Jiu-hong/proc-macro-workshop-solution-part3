@@ -1,9 +1,8 @@
-use std::str::FromStr;
-
 use crate::Compile;
-use proc_macro2::{Group, Ident};
+use proc_macro2::{Group, Ident, Span};
 
-use quote::quote;
+use quote::{ToTokens, quote};
+use syn::spanned::Spanned;
 
 pub fn compile_token_stream(
     compile: Compile,
@@ -27,7 +26,7 @@ fn update_group_ident(
     name: &Ident,
     index: u64,
 ) -> proc_macro2::TokenStream {
-    // for current_token in tokenstream {
+    let span = tokenstream.span();
     tokenstream
         .into_iter()
         .map(|current_token| {
@@ -38,9 +37,10 @@ fn update_group_ident(
                 if group.stream().into_iter().count() == 1 {
                     // if current_token == "N"
                     if group.stream().to_string() == name.to_string() {
-                        //  {current_token = customized_token //change current token.}
-                        let new_token =
-                            proc_macro2::TokenStream::from_str(&index.to_string()).unwrap();
+                        let new_token = {
+                            let number = syn::LitInt::new(&index.to_string(), Span::call_site());
+                            number.to_token_stream()
+                        };
                         // replace group's name with specific number
                         let new_group = Group::new(delimiter, new_token.clone());
                         let customized_token = proc_macro2::TokenTree::Group(new_group);

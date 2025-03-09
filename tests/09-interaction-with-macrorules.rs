@@ -53,7 +53,13 @@ impl Proc {
 
 macro_rules! make_procs_array {
     ($nproc:literal) => {
-        seq!(N in 0..$nproc { [#(Proc::new(),)*] })
+        seq!(N in 0..$nproc { 
+            [
+                #(
+                    Proc::new(),
+                )*
+            ] 
+        })
     }
 }
 
